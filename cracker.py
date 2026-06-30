@@ -1,6 +1,7 @@
 import argparse
 
 from modules.banner import show_banner
+from modules.hash_utils import generate_hash
 
 
 def create_parser():
@@ -20,7 +21,7 @@ def create_parser():
 
     group.add_argument(
         "--generate",
-        help="Generate hash from password"
+        help="Generate hash from a password"
     )
 
     group.add_argument(
@@ -67,15 +68,42 @@ def create_parser():
 
 
 def main():
+    # Show banner
     show_banner()
 
+    # Parse command-line arguments
     parser = create_parser()
     args = parser.parse_args()
 
-    print("Arguments received:\n")
+    # Generate hash
+    if args.generate:
+        password_hash = generate_hash(args.generate, args.method)
 
-    for key, value in vars(args).items():
-        print(f"{key:12}: {value}")
+        print(f"Algorithm : {args.method.upper()}")
+        print(f"Password  : {args.generate}")
+        print(f"Hash      : {password_hash}")
+        return
+
+    # Benchmark (placeholder)
+    if args.benchmark:
+        print("Benchmark module will be added in a later part.")
+        return
+
+    # Crack hash (placeholder)
+    if args.hash:
+        print("Hash Cracking Module")
+        print("-" * 40)
+        print(f"Target Hash : {args.hash}")
+        print(f"Algorithm   : {args.method.upper()}")
+
+        if args.wordlist:
+            print(f"Wordlist    : {args.wordlist}")
+
+        if args.brute:
+            print("Attack Mode : Brute Force")
+
+        print("\n(Dictionary attack engine will be added in Part 3.)")
+        return
 
 
 if __name__ == "__main__":
