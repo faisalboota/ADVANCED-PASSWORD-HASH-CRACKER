@@ -4,9 +4,11 @@ from modules.banner import show_banner
 from modules.hash_utils import generate_hash
 from modules.attacks import dictionary_attack
 from modules.detector import detect_hash
-from modules.ui import title, info, success, error
 from modules.reporter import save_text_report, save_json_report
+from modules.session import save_session
 from modules.benchmark import run_benchmark
+from modules.ui import title, info, success, error
+
 
 def create_parser():
     parser = argparse.ArgumentParser(
@@ -18,21 +20,17 @@ def create_parser():
     group = parser.add_mutually_exclusive_group(required=True)
 
     group.add_argument("-H", "--hash", help="Target hash")
-
-    group.add_argument(
-        "--generate",
-        help="Generate hash"
-    )
-
+    group.add_argument("--generate", help="Generate hash from password")
     group.add_argument(
         "--benchmark",
         action="store_true",
-        help="Run benchmark (Coming Soon)"
+        help="Run benchmark"
     )
 
     parser.add_argument(
         "-m",
         "--method",
+        default="auto",
         choices=[
             "auto",
             "md5",
@@ -42,25 +40,26 @@ def create_parser():
             "sha384",
             "sha512"
         ],
-        default="auto",
         help="Hash algorithm"
     )
 
     parser.add_argument(
         "-w",
         "--wordlist",
-        help="Wordlist"
+        help="Wordlist path"
     )
 
     parser.add_argument(
         "-v",
         "--verbose",
-        action="store_true"
+        action="store_true",
+        help="Verbose output"
     )
 
     parser.add_argument(
         "--brute",
-        action="store_true"
+        action="store_true",
+        help="Brute-force mode (Coming Soon)"
     )
 
     return parser
@@ -85,10 +84,33 @@ def generate_mode(args):
     info(f"Hash      : {password_hash}")
 
 
+def benchmark_mode():
+
+    title("BENCHMARK")
+
+    algorithms = [
+        "md5",
+        "sha1",
+        "sha224",
+        "sha256",
+        "sha384",
+        "sha512"
+    ]
+
+    for algorithm in algorithms:
+
+        result = run_benchmark(algorithm)
+
+        print(
+            f"{result['algorithm']:8}"
+            f"{result['speed']:,.0f} Hashes/sec"
+        )
+
+
 def dictionary_mode(args):
 
     if not args.wordlist:
-        error("Please provide a wordlist using -w")
+        error("Please specify a wordlist using -w")
         return
 
     algorithm = args.method
@@ -126,10 +148,10 @@ def dictionary_mode(args):
     title("RESULT")
 
     if result["found"]:
-        success("Password Found")
+        success("PASSWORD FOUND")
         print(f"Password : {result['password']}")
     else:
-        error("Password Not Found")
+        error("PASSWORD NOT FOUND")
 
     print(f"Attempts : {result['attempts']:,}")
     print(f"Time     : {result['time']:.3f} sec")
@@ -145,33 +167,16 @@ def dictionary_mode(args):
         "speed": result["speed"]
     }
 
-    txt = save_text_report(report)
-    js = save_json_report(report)
+    txt_file = save_text_report(report)
+    json_file = save_json_report(report)
+    save_session(report)
+
+    print()
 
     success("Reports Saved")
-    print(txt)
-    print(js)
-
-
-def benchmark_mode():
-
-    title("BENCHMARK")
-
-    algorithms = [
-        "md5",
-        "sha1",
-        "sha224",
-        "sha256",
-        "sha384",
-        "sha512"
-    ]
-
-    for algorithm in algorithms:
-
-        result = run_benchmark(algorithm)
-
-        print(f"{result['algorithm']:8} "
-              f"{result['speed']:,.0f} Hashes/sec")
+    print(f"TXT Report   : {txt_file}")
+    print(f"JSON Report  : {json_file}")
+    print("Session Log  : sessions/history.log")
 
 
 def main():
@@ -179,7 +184,6 @@ def main():
     show_banner()
 
     parser = create_parser()
-
     args = parser.parse_args()
 
     if args.generate:
